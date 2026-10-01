@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a2b2a">
 <title>青禾库存 · 工作台</title>
+<!-- 扫码库 -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<!-- ExcelJS 和 FileSaver (用于导出带图片的 Excel) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <style>
 :root{
   --sidebar-bg:#1a2b2a;--sidebar-text:#a3b8b0;--sidebar-hover:#2d423f;--sidebar-active:#2e7d6b;
@@ -22,19 +25,13 @@ input,textarea,select,button{font-family:inherit;font-size:14px}
 
 /* 布局 */
 .app-container{display:flex;height:100vh;width:100vw}
-.sidebar{
-  width:240px;background:var(--sidebar-bg);color:var(--sidebar-text);
-  display:flex;flex-direction:column;flex-shrink:0;padding:20px 0;
-}
+.sidebar{width:240px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;flex-shrink:0;padding:20px 0}
 .logo{display:flex;align-items:center;gap:10px;padding:0 24px 30px;color:#fff}
 .logo-icon{width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px}
 .logo-text h1{font-size:16px;margin:0;font-weight:700}
 .logo-text p{font-size:11px;margin:2px 0 0;opacity:.6;letter-spacing:.5px}
 .nav-menu{flex:1;display:flex;flex-direction:column;gap:4px;padding:0 12px}
-.nav-item{
-  display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;
-  cursor:pointer;font-size:14px;font-weight:500;transition:.2s;border:none;background:transparent;color:inherit;text-align:left;width:100%;
-}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:.2s;border:none;background:transparent;color:inherit;text-align:left;width:100%}
 .nav-item svg{width:18px;height:18px;flex-shrink:0}
 .nav-item:hover{background:var(--sidebar-hover);color:#fff}
 .nav-item.active{background:var(--sidebar-active);color:#fff}
@@ -42,21 +39,14 @@ input,textarea,select,button{font-family:inherit;font-size:14px}
 .sidebar-footer b{color:#fff}
 
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
-.header{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:16px 28px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:10px;
-}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 28px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:10px}
 .header-left h2{margin:0;font-size:20px;font-weight:700}
 .header-left p{margin:4px 0 0;font-size:13px;color:var(--text-2)}
 .header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .page-body{padding:20px 28px;overflow-y:auto;flex:1}
 
 /* 通用组件 */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;
-  border:1px solid transparent;font-size:14px;font-weight:600;cursor:pointer;
-  transition:.15s;background:#fff;color:var(--text);white-space:nowrap;
-}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid transparent;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;background:#fff;color:var(--text);white-space:nowrap}
 .btn:active{transform:scale(.98)}
 .btn.primary{background:var(--primary);color:#fff}
 .btn.primary:hover{background:var(--primary-hover)}
@@ -108,19 +98,13 @@ tbody tr:last-child td{border-bottom:none}
 .toolbar select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;outline:none;background:#fff;color:var(--text)}
 
 /* 补货提示条 */
-.alert-bar{
-  display:flex;justify-content:space-between;align-items:center;
-  background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:#92400e;
-}
+.alert-bar{display:flex;justify-content:space-between;align-items:center;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:#92400e}
 .alert-bar strong{color:#d97706}
 
 /* 模态框 */
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s}
 .modal.show{opacity:1;pointer-events:auto}
-.modal-content{
-  background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
-  padding:24px;transform:translateY(20px);transition:.3s;
-}
+.modal-content{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:24px;transform:translateY(20px);transition:.3s}
 .modal.show .modal-content{transform:none}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .modal-header h3{margin:0;font-size:18px}
@@ -454,7 +438,7 @@ function renderStock(el){
           <option value="">所有类别</option>
           ${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
         </select>
-        <button class="btn outline" onclick="exportExcel()">📥 导出全部商品</button>
+        <button class="btn outline" onclick="exportExcel()">📥 导出 Excel</button>
         <button class="btn outline" onclick="exportJSON()">💾 备份数据</button>
         <button class="btn outline" onclick="document.getElementById('importFile').click()">📤 恢复备份</button>
         <input type="file" id="importFile" accept=".json" hidden onchange="importData(event)">
@@ -681,13 +665,6 @@ function saveItem(e){
   save();closeItemModal();renderPage();
 }
 
-function deleteItem(id){
-  const p=items.find(x=>x.id===id);if(!p)return;
-  if(!confirm(`确定删除「${p.name}」吗？`))return;
-  items=items.filter(x=>x.id!==id);
-  save();renderPage();toast('已删除');
-}
-
 function openStockModal(id,type){
   stockItemId=id;stockType=type||'in';
   const p=items.find(x=>x.id===id);if(!p)return;
@@ -797,27 +774,120 @@ function exportJSON(){
   toast('JSON 备份已导出');
 }
 
-function exportExcel(){
+async function exportExcel(){
   if(items.length===0){toast('没有数据可导出');return}
-  if(typeof XLSX==='undefined'){toast('Excel 组件未加载完成，请刷新页面重试');return}
-  const itemData=items.map(p=>({
-    '商品名称':p.name,'条码/编号':p.sku||'','分类':p.cat||'','单位':p.unit||'',
-    '当前库存':Number(p.qty)||0,'安全库存':Number(p.min)||0,'目标库存':Number(p.target)||0,
-    '进价(元)':Number(p.cost)||0,'售价(元)':Number(p.price)||0,
-    '库存成本(元)':(Number(p.qty)||0)*(Number(p.cost)||0),'备注':p.note||''
-  }));
-  const wsItems=XLSX.utils.json_to_sheet(itemData);
-  const recordData=records.map(r=>({
-    '时间':fmtTime(r.time),'商品名称':r.name,'类型':r.type==='in'?'入库':'出库','数量':r.qty,
-    '变动前库存':r.before,'变动后库存':r.after,'备注':r.note||''
-  }));
-  const wsRecords=XLSX.utils.json_to_sheet(recordData);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,wsItems,'库存商品');
-  XLSX.utils.book_append_sheet(wb,wsRecords,'出入库流水');
+  if(typeof ExcelJS==='undefined'||typeof saveAs==='undefined'){toast('导出组件未加载完成，请刷新页面重试');return}
+  
+  toast('正在生成 Excel，请稍候...');
+  
+  const workbook=new ExcelJS.Workbook();
+  const worksheet=workbook.addWorksheet('库存商品');
+  
+  // 设置列宽和表头
+  worksheet.columns=[
+    {header:'商品图片',key:'image',width:15},
+    {header:'商品名称',key:'name',width:22},
+    {header:'条码/编号',key:'sku',width:15},
+    {header:'分类',key:'cat',width:12},
+    {header:'单位',key:'unit',width:8},
+    {header:'当前库存',key:'qty',width:10},
+    {header:'安全库存',key:'min',width:10},
+    {header:'目标库存',key:'target',width:10},
+    {header:'进价(元)',key:'cost',width:10},
+    {header:'售价(元)',key:'price',width:10},
+    {header:'库存成本',key:'totalCost',width:12},
+    {header:'状态',key:'status',width:12},
+    {header:'备注',key:'note',width:20}
+  ];
+  
+  // 表头样式
+  const headerRow=worksheet.getRow(1);
+  headerRow.font={bold:true,color:{argb:'FFFFFFFF'}};
+  headerRow.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2E7D6B'}};
+  headerRow.alignment={vertical:'middle',horizontal:'center'};
+  headerRow.height=25;
+  
+  // 逐行添加商品和图片
+  for(let i=0;i<items.length;i++){
+    const p=items[i];
+    const low=Number(p.min)>0&&Number(p.qty)<=Number(p.min);
+    const out=Number(p.qty)<=0;
+    let statusText='库存充足';
+    if(out)statusText='缺货';
+    else if(low)statusText='库存偏低';
+    
+    const row=worksheet.addRow({
+      name:p.name,
+      sku:p.sku||'',
+      cat:p.cat||'',
+      unit:p.unit||'',
+      qty:Number(p.qty)||0,
+      min:Number(p.min)||0,
+      target:Number(p.target)||0,
+      cost:Number(p.cost)||0,
+      price:Number(p.price)||0,
+      totalCost:(Number(p.qty)||0)*(Number(p.cost)||0),
+      status:statusText,
+      note:p.note||''
+    });
+    
+    row.height=60; // 图片行高
+    row.alignment={vertical:'middle'};
+    
+    // 如果有图片，嵌入到第一列（图片列）
+    if(p.image&&p.image.startsWith('data:image')){
+      try{
+        const base64Data=p.image.split(',')[1];
+        const imageId=workbook.addImage({
+          base64:base64Data,
+          extension:'jpeg'
+        });
+        // 把图片放入第 1 列，第 i+2 行（表头占第 1 行）
+        worksheet.addImage(imageId,{
+          tl:{col:0,row:i+1},
+          ext:{width:80,height:80},
+          editAs:'oneCell'
+        });
+      }catch(err){
+        console.warn('图片嵌入失败：',err);
+      }
+    }
+  }
+  
+  // 第二个工作表：出入库流水
+  const wsRecords=workbook.addWorksheet('出入库流水');
+  wsRecords.columns=[
+    {header:'时间',key:'time',width:20},
+    {header:'商品名称',key:'name',width:22},
+    {header:'类型',key:'type',width:10},
+    {header:'数量',key:'qty',width:10},
+    {header:'变动前库存',key:'before',width:12},
+    {header:'变动后库存',key:'after',width:12},
+    {header:'备注',key:'note',width:20}
+  ];
+  const recHeader=wsRecords.getRow(1);
+  recHeader.font={bold:true,color:{argb:'FFFFFFFF'}};
+  recHeader.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2E7D6B'}};
+  
+  records.forEach(r=>{
+    wsRecords.addRow({
+      time:fmtTime(r.time),
+      name:r.name,
+      type:r.type==='in'?'入库':'出库',
+      qty:r.qty,
+      before:r.before,
+      after:r.after,
+      note:r.note||''
+    });
+  });
+  
+  // 导出文件
+  const buffer=await workbook.xlsx.writeBuffer();
+  const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const d=new Date();
-  XLSX.writeFile(wb,`青禾库存_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`);
-  toast('Excel 导出成功！');
+  const fileName=`青禾库存_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`;
+  saveAs(blob,fileName);
+  toast('Excel 导出成功！图片已包含在内。');
 }
 
 function importData(e){
