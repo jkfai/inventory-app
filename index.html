@@ -268,8 +268,14 @@ tbody tr:last-child td{border-bottom:none}
       </div>
       <div class="field">
         <label>商品图片</label>
-        <input type="file" id="fImage" accept="image/*" capture="environment" onchange="handleImageUpload(event)" style="display:none">
-        <button type="button" class="btn outline" style="width:100%" onclick="document.getElementById('fImage').click()">📷 选择图片</button>
+        <!-- 拍照（强制调用后置摄像头） -->
+        <input type="file" id="fImageCamera" accept="image/*" capture="environment" onchange="handleImageUpload(event)" style="display:none">
+        <!-- 相册（弹出系统文件选择器） -->
+        <input type="file" id="fImageGallery" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button type="button" class="btn outline" style="flex:1" onclick="document.getElementById('fImageCamera').click()">📷 拍照</button>
+          <button type="button" class="btn outline" style="flex:1" onclick="document.getElementById('fImageGallery').click()">🖼️ 相册</button>
+        </div>
         <img id="previewImg" class="img-preview">
         <button type="button" class="btn sm danger" style="margin-top:6px;display:none" id="removeImgBtn" onclick="removeImage()">删除图片</button>
       </div>
@@ -597,7 +603,8 @@ function openItemModal(id){
   const form=document.getElementById('itemForm');form.reset();
   document.getElementById('previewImg').style.display='none';
   document.getElementById('removeImgBtn').style.display='none';
-  document.getElementById('fImage').value='';
+  document.getElementById('fImageCamera').value='';
+  document.getElementById('fImageGallery').value='';
   currentImageBase64=null;
   
   if(id){
@@ -724,39 +731,87 @@ function handleImageUpload(e){
 
 function removeImage(){
   currentImageBase64=null;
-  document.getElementById('fImage').value='';
+  const camInput=document.getElementById('fImageCamera');
+  const galInput=document.getElementById('fImageGallery');
+  if(camInput)camInput.value='';
+  if(galInput)galInput.value='';
   document.getElementById('previewImg').style.display='none';
   document.getElementById('removeImgBtn').style.display='none';
 }
 
-/* ========== 扫码 ========== */
+/* ========== 扫码功能（移动端优化版，解决黑屏） ========== */
 function startScan(){
-  if(typeof Html5Qrcode==='undefined'){toast('扫码库未加载完成');return}
+  if(typeof Html5Qrcode==='undefined'){
+    toast('扫码库未加载完成，请刷新重试');
+    return;
+  }
+  
+  // 1. 先弹出模态框，让页面先渲染
   document.getElementById('scannerModal').classList.add('show');
-  if(html5QrCode){try{html5QrCode.clear()}catch(e){}html5QrCode=null}
-  html5QrCode=new Html5Qrcode("reader");
-  html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250},aspectRatio:1.0},onScanSuccess)
-  .catch(()=>{toast("无法启动摄像头");closeScan()});
+  
+  // 2. 延迟 400 毫秒，等动画走完再启动摄像头（防止黑屏的核心）
+  setTimeout(() => {
+    if(html5QrCode){ try{html5QrCode.clear()}catch(e){} }
+    
+    // 检查当前环境是否支持摄像头
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      toast('当前环境不支持调用摄像头，请确认使用 HTTPS 网址');
+      closeScan();
+      return;
+    }
+    
+    html5QrCode = new Html5Qrcode("reader");
+    
+    // 尝试直接启动环境摄像头（兼容性最好）
+    html5QrCode.start(
+      { facingMode: "environment" }, // 强制后置
+      { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
+      onScanSuccess,
+      (errorMessage) => { /* 每帧扫描的错误忽略，避免刷屏 */ }
+    ).catch(err => {
+      console.error("摄像头启动失败：", err);
+      // 失败时给用户明确的提示，而不是一直黑屏
+      if(err.name === 'NotAllowedError' || err.message.includes('permission')){
+        toast('❌ 相机权限被拒绝！请在手机设置中允许本应用使用相机');
+      }else if(err.name === 'NotFoundError'){
+        toast('❌ 未检测到摄像头设备');
+      }else{
+        toast('❌ 摄像头启动失败，请检查手机权限');
+      }
+      closeScan();
+    });
+  }, 400);
 }
 
 function onScanSuccess(decodedText){
-  if(html5QrCode){html5QrCode.stop().then(()=>{html5QrCode.clear();html5QrCode=null}).catch(()=>{html5QrCode=null})}
+  if(html5QrCode){
+    html5QrCode.stop().then(()=>{
+      html5QrCode.clear();
+      html5QrCode=null;
+    }).catch(()=>{html5QrCode=null});
+  }
   document.getElementById('scannerModal').classList.remove('show');
-  const product=items.find(p=>p.sku===decodedText||p.name===decodedText);
+  
+  const product = items.find(p => p.sku === decodedText || p.name === decodedText);
   if(product){
-    const action=confirm(`✅ 找到商品：${product.name}\n当前库存：${product.qty}\n\n点击【确定】入库\n点击【取消】出库`);
-    openStockModal(product.id,action?'in':'out');
-  }else{
+    const action = confirm(`✅ 找到商品：${product.name}\n当前库存：${product.qty}\n\n点击【确定】入库\n点击【取消】出库`);
+    openStockModal(product.id, action ? 'in' : 'out');
+  } else {
     if(confirm(`❓ 未找到条码 [${decodedText}]\n是否新增商品？`)){
       openItemModal();
-      document.getElementById('fSku').value=decodedText;
+      document.getElementById('fSku').value = decodedText;
       toast('已自动填入条码');
     }
   }
 }
 
 function closeScan(){
-  if(html5QrCode){html5QrCode.stop().then(()=>{html5QrCode.clear();html5QrCode=null}).catch(()=>{html5QrCode=null})}
+  if(html5QrCode){
+    html5QrCode.stop().then(()=>{
+      html5QrCode.clear();
+      html5QrCode=null;
+    }).catch(()=>{html5QrCode=null});
+  }
   document.getElementById('scannerModal').classList.remove('show');
 }
 
