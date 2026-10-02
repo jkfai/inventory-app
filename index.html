@@ -464,7 +464,7 @@ function renderStock(el){
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>商品</th><th>类别</th><th>当前库存</th><th>安全库存</th><th>售价</th><th>条码</th><th>状态</th><th style="text-align:right">操作</th>
+            <th>商品</th><th>类别</th><th>当前库存</th><th>安全库存</th><th>售价</th><th>条码</th><th>建议补货量</th><th style="text-align:right">操作</th>
           </tr></thead>
           <tbody id="stockTableBody"></tbody>
         </table>
@@ -488,10 +488,10 @@ function filterStock(){
   }
   tbody.innerHTML=filtered.map(p=>{
     const low=Number(p.min)>0&&Number(p.qty)<=Number(p.min);
-    const out=Number(p.qty)<=0;
-    let statusHtml='<span class="tag green">库存充足</span>';
-    if(out)statusHtml='<span class="tag red">缺货</span>';
-    else if(low)statusHtml='<span class="tag orange">库存偏低</span>';
+    const target=Number(p.target)||Number(p.min)*2||10;
+    const suggest=Math.max(0,target-Number(p.qty));
+    let suggestHtml='<span class="num" style="color:var(--success);font-size:15px">0</span>';
+    if(suggest>0) suggestHtml=`<span class="num text-warning" style="font-size:15px">${suggest}</span> <span style="font-size:12px;color:var(--text-3)">${esc(p.unit||'')}</span>`;
     
     const img=p.image?`<img src="${p.image}" class="product-img">`:`<div class="product-img">无图</div>`;
     return `
@@ -502,7 +502,7 @@ function filterStock(){
         <td><span class="num">${p.min||0}</span> ${esc(p.unit||'')}</td>
         <td>${money(p.price)}</td>
         <td style="font-family:ui-monospace,monospace;font-size:12px">${p.sku||'—'}</td>
-        <td>${statusHtml}</td>
+        <td>${suggestHtml}</td>
         <td class="action-col">
           <button class="btn sm outline icon-btn" onclick="openStockModal('${p.id}','out')" title="出库">−</button>
           <button class="btn sm primary icon-btn" onclick="openStockModal('${p.id}','in')" title="入库">+</button>
