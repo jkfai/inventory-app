@@ -133,8 +133,8 @@ tbody tr:last-child td{border-bottom:none}
   .stats-grid{grid-template-columns:1fr 1fr}
   .grid2{grid-template-columns:1fr}
   .table-wrap th:nth-child(4),.table-wrap td:nth-child(4),
-  .table-wrap th:nth-child(5),.table-wrap td:nth-child(5),
-  .table-wrap th:nth-child(7),.table-wrap td:nth-child(7){display:none}
+  .table-wrap th:nth-child(6),.table-wrap td:nth-child(6),
+  .table-wrap th:nth-child(8),.table-wrap td:nth-child(8){display:none}
   .toolbar .search{min-width:100%}
 }
 </style>
@@ -221,7 +221,7 @@ tbody tr:last-child td{border-bottom:none}
           <input id="fSku" maxlength="30" placeholder="扫码或手动输入">
         </div>
         <div class="field">
-          <label>单位</label>
+          <label>单位（仅备注，不显示）</label>
           <input id="fUnit" maxlength="8" placeholder="件 / 盒 / 罐">
         </div>
       </div>
@@ -329,7 +329,6 @@ tbody tr:last-child td{border-bottom:none}
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-/* ========== 状态与存储 ========== */
 const KEY='inventory_app_v2';
 let items=[],records=[],editingId=null,stockItemId=null,stockType='in';
 let html5QrCode=null,currentImageBase64=null,cameraStream=null;
@@ -356,7 +355,6 @@ el.className='toast';el.textContent=msg;w.appendChild(el);
 setTimeout(()=>{el.style.transition='opacity .25s, transform .25s';el.style.opacity='0';
 el.style.transform='translateX(20px)';setTimeout(()=>el.remove(),260)},2000)}
 
-/* ========== 页面切换 ========== */
 const PAGE_INFO={
   home:['工作概览','管理你的商品库存'],
   stock:['库存商品','查看和管理所有商品，使用扫码快速登记入库或出库。'],
@@ -382,12 +380,14 @@ function renderPage(){
   else if(currentPage==='history') renderHistory(el);
 }
 
-/* ========== 工作概览 ========== */
 function renderHome(el){
   const kinds=items.length;
   const totalQty=items.reduce((s,p)=>s+(Number(p.qty)||0),0);
   const totalValue=items.reduce((s,p)=>s+(Number(p.qty)||0)*(Number(p.cost)||0),0);
-  const lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  const lowItems=items.filter(p=>{
+    const min=Number(p.min)||0, qty=Number(p.qty)||0, target=Number(p.target)||min*2||10;
+    return (min>0&&qty<=min)||(min===0&&qty<target-1);
+  });
   
   el.innerHTML=`
     <div class="stats-grid">
@@ -448,7 +448,7 @@ function renderStock(el){
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>商品</th><th>类别</th><th>目标库存</th><th>当前库存</th><th>建议补货量</th><th>售价</th><th>条码</th><th style="text-align:right">操作</th>
+            <th>商品</th><th>类别</th><th>安全库存</th><th>目标库存</th><th>当前库存</th><th>建议补货量</th><th>售价</th><th>条码</th><th style="text-align:right">操作</th>
           </tr></thead>
           <tbody id="stockTableBody"></tbody>
         </table>
@@ -468,22 +468,23 @@ function filterStock(){
   });
   const tbody=document.getElementById('stockTableBody');
   if(filtered.length===0){
-    tbody.innerHTML='<tr><td colspan="8"><div class="empty">没有找到匹配的商品</div></td></tr>';return;
+    tbody.innerHTML='<tr><td colspan="9"><div class="empty">没有找到匹配的商品</div></td></tr>';return;
   }
   tbody.innerHTML=filtered.map(p=>{
     const low=Number(p.min)>0&&Number(p.qty)<=Number(p.min);
     const target=Number(p.target)||Number(p.min)*2||10;
     const suggest=Math.max(0,target-Number(p.qty));
     let suggestHtml='<span class="num" style="color:var(--success);font-size:15px">0</span>';
-    if(suggest>0) suggestHtml=`<span class="num text-warning" style="font-size:15px">${suggest}</span> <span style="font-size:12px;color:var(--text-3)">${esc(p.unit||'')}</span>`;
+    if(suggest>0) suggestHtml=`<span class="num text-warning" style="font-size:15px">${suggest}</span>`;
     
     const img=p.image?`<img src="${p.image}" class="product-img">`:`<div class="product-img">无图</div>`;
     return `
       <tr>
         <td><div class="product-cell">${img}<div class="product-info"><div class="name">${esc(p.name)}</div><div class="sku">${p.sku?esc(p.sku):'无条码'}</div></div></div></td>
         <td><span class="tag">${esc(p.cat||'未分类')}</span></td>
-        <td><span class="num">${target}</span> ${esc(p.unit||'')}</td>
-        <td><span class="num ${low?'text-danger':''}">${p.qty}</span> ${esc(p.unit||'')}</td>
+        <td><span class="num">${p.min||0}</span></td>
+        <td><span class="num">${target}</span></td>
+        <td><span class="num ${low?'text-danger':''}">${p.qty}</span></td>
         <td>${suggestHtml}</td>
         <td>${money(p.price)}</td>
         <td style="font-family:ui-monospace,monospace;font-size:12px">${p.sku||'—'}</td>
@@ -498,7 +499,12 @@ function filterStock(){
 
 /* ========== 补货清单 ========== */
 function renderRestock(el){
-  const allLowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  const allLowItems=items.filter(p=>{
+    const min = Number(p.min) || 0;
+    const qty = Number(p.qty) || 0;
+    const target = Number(p.target) || min * 2 || 10;
+    return (min > 0 && qty <= min) || (min === 0 && qty < target - 1);
+  });
   const cats=[...new Set(items.map(p=>p.cat).filter(Boolean))];
   const totalSuggest=allLowItems.reduce((s,p)=>{
     const target=Number(p.target)||Number(p.min)*2||10;
@@ -522,40 +528,47 @@ function renderRestock(el){
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>类别</th><th>商品</th><th>目标库存</th><th>当前库存</th><th>建议补货量</th><th>条码</th><th style="text-align:right">操作</th>
+            <th>商品</th><th>类别</th><th>安全库存</th><th>目标库存</th><th>当前库存</th><th>建议补货量</th><th>售价</th><th>条码</th><th style="text-align:right">操作</th>
           </tr></thead>
           <tbody id="restockBody"></tbody>
         </table>
       </div>
     </div>
   `;
-  
   filterRestock();
 }
 
 function filterRestock(){
   restockCatFilter=document.getElementById('restockCatFilter')?.value||'';
-  let lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
-  if(restockCatFilter){
-    lowItems=lowItems.filter(p=>p.cat===restockCatFilter);
-  }
+  let lowItems=items.filter(p=>{
+    const min = Number(p.min) || 0;
+    const qty = Number(p.qty) || 0;
+    const target = Number(p.target) || min * 2 || 10;
+    return (min > 0 && qty <= min) || (min === 0 && qty < target - 1);
+  });
+  if(restockCatFilter){ lowItems=lowItems.filter(p=>p.cat===restockCatFilter); }
   const tbody=document.getElementById('restockBody');
   if(!tbody) return;
   if(lowItems.length===0){
-    tbody.innerHTML='<tr><td colspan="7"><div class="empty">暂无需要补货的商品</div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="9"><div class="empty">暂无需要补货的商品</div></td></tr>';
     return;
   }
   tbody.innerHTML=lowItems.map(p=>{
     const target=Number(p.target)||Number(p.min)*2||10;
     const suggest=Math.max(0,target-Number(p.qty));
+    let suggestHtml='<span class="num" style="color:var(--success);font-size:15px">0</span>';
+    if(suggest>0) suggestHtml=`<span class="num text-warning" style="font-size:15px">${suggest}</span>`;
+    
     const img=p.image?`<img src="${p.image}" class="product-img">`:`<div class="product-img">无图</div>`;
     return `
       <tr>
-        <td><span class="tag">${esc(p.cat||'未分类')}</span></td>
         <td><div class="product-cell">${img}<div class="product-info"><div class="name">${esc(p.name)}</div><div class="sku">${p.sku?esc(p.sku):'无条码'}</div></div></div></td>
-        <td><span class="num">${target}</span> ${esc(p.unit||'')}</td>
-        <td><span class="num ${Number(p.qty)<=Number(p.min)?'text-danger':''}">${p.qty}</span> ${esc(p.unit||'')}</td>
-        <td><span class="num text-warning">${suggest}</span> ${esc(p.unit||'')}</td>
+        <td><span class="tag">${esc(p.cat||'未分类')}</span></td>
+        <td><span class="num">${p.min||0}</span></td>
+        <td><span class="num">${target}</span></td>
+        <td><span class="num ${Number(p.qty)<=Number(p.min)?'text-danger':''}">${p.qty}</span></td>
+        <td>${suggestHtml}</td>
+        <td>${money(p.price)}</td>
         <td style="font-family:ui-monospace,monospace;font-size:12px">${p.sku||'—'}</td>
         <td class="action-col">
           <button class="btn sm primary" onclick="confirmRestock('${p.id}')">确认到货</button>
@@ -602,17 +615,16 @@ function renderHistoryList(){
   `).join('');
 }
 
-/* ========== 核心操作 ========== */
 function confirmRestock(id){
   const p=items.find(x=>x.id===id);if(!p)return;
   const target=Number(p.target)||Number(p.min)*2||10;
   const suggest=Math.max(0,target-Number(p.qty));
   if(suggest<=0){toast('当前库存已达标');return}
-  if(!confirm(`确认到货「${p.name}」？\n本次补货：${suggest} ${p.unit||'件'}\n补货后库存：${target}`))return;
+  if(!confirm(`确认到货「${p.name}」？\n本次补货：${suggest}\n补货后库存：${target}`))return;
   const before=Number(p.qty)||0;
   p.qty=target;
   records.unshift({id:uid(),itemId:p.id,name:p.name,type:'in',qty:suggest,before,after:target,note:'补货确认到货',time:Date.now()});
-  save();renderPage();toast(`已到货 ${suggest} ${p.unit||'件'}`);
+  save();renderPage();toast(`已到货 ${suggest}`);
 }
 
 function openItemModal(id){
@@ -728,7 +740,6 @@ function confirmStock(){
   toast(stockType==='in'?`已入库 ${qty}`:`已出库 ${qty}`);
 }
 
-/* ========== 相机拍照 ========== */
 function openCamera(){
   document.getElementById('cameraModal').classList.add('show');
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -804,7 +815,6 @@ function removeImage(){
   document.getElementById('removeImgBtn').style.display='none';
 }
 
-/* ========== 扫码 ========== */
 function startScan(){
   if(typeof Html5Qrcode==='undefined' || typeof Html5QrcodeSupportedFormats === 'undefined'){
     toast('扫码库未加载完成，请刷新重试');
@@ -888,7 +898,6 @@ function closeScan(){
   document.getElementById('scannerModal').classList.remove('show');
 }
 
-/* ========== 导出 & 导入 ========== */
 function exportJSON(){
   if(items.length===0){toast('没有数据可导出');return}
   const data=JSON.stringify({version:2,exportedAt:new Date().toISOString(),items,records},null,2);
@@ -917,9 +926,9 @@ async function exportExcel(){
     {header:'条码/编号',key:'sku',width:15},
     {header:'分类',key:'cat',width:12},
     {header:'单位',key:'unit',width:8},
+    {header:'安全库存',key:'min',width:10},
     {header:'目标库存',key:'target',width:10},
     {header:'当前库存',key:'qty',width:10},
-    {header:'安全库存',key:'min',width:10},
     {header:'建议补货量',key:'suggest',width:12},
     {header:'进价(RM)',key:'cost',width:10},
     {header:'售价(RM)',key:'price',width:10},
@@ -943,9 +952,9 @@ async function exportExcel(){
       sku:p.sku||'',
       cat:p.cat||'',
       unit:p.unit||'',
+      min:Number(p.min)||0,
       target:target,
       qty:Number(p.qty)||0,
-      min:Number(p.min)||0,
       suggest:suggest,
       cost:Number(p.cost)||0,
       price:Number(p.price)||0,
@@ -993,12 +1002,14 @@ async function exportExcel(){
   toast('Excel 导出成功！');
 }
 
-/* ========== 补货清单导出 ========== */
 function getRestockList(){
-  let lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
-  if(restockCatFilter){
-    lowItems=lowItems.filter(p=>p.cat===restockCatFilter);
-  }
+  let lowItems=items.filter(p=>{
+    const min = Number(p.min) || 0;
+    const qty = Number(p.qty) || 0;
+    const target = Number(p.target) || min * 2 || 10;
+    return (min > 0 && qty <= min) || (min === 0 && qty < target - 1);
+  });
+  if(restockCatFilter){ lowItems=lowItems.filter(p=>p.cat===restockCatFilter); }
   return lowItems;
 }
 
@@ -1014,10 +1025,11 @@ async function exportRestockExcel(){
   
   worksheet.columns=[
     {header:'商品图片',key:'image',width:15},
-    {header:'类别',key:'cat',width:12},
     {header:'商品名称',key:'name',width:22},
     {header:'条码/编号',key:'sku',width:15},
-    {header:'目标库存',key:'target',width:12},
+    {header:'分类',key:'cat',width:12},
+    {header:'安全库存',key:'min',width:10},
+    {header:'目标库存',key:'target',width:10},
     {header:'当前库存',key:'qty',width:10},
     {header:'建议补货量',key:'suggest',width:14},
     {header:'单位',key:'unit',width:8}
@@ -1035,9 +1047,10 @@ async function exportRestockExcel(){
     const suggest=Math.max(0,target-Number(p.qty));
     
     const row=worksheet.addRow({
-      cat:p.cat||'',
       name:p.name,
       sku:p.sku||'',
+      cat:p.cat||'',
+      min:Number(p.min)||0,
       target:target,
       qty:Number(p.qty)||0,
       suggest:suggest,
@@ -1074,7 +1087,7 @@ function exportRestockJSON(){
       '商品名称':p.name,
       '条码/编号':p.sku||'',
       '分类':p.cat||'',
-      '单位':p.unit||'',
+      '安全库存':Number(p.min)||0,
       '目标库存':target,
       '当前库存':Number(p.qty)||0,
       '建议补货量':Math.max(0,target-Number(p.qty))
@@ -1117,7 +1130,6 @@ function importData(e){
   reader.readAsText(file);
 }
 
-/* ========== 初始化 ========== */
 (function init(){
   const hasData=load();
   if(!hasData&&items.length===0){
