@@ -116,9 +116,10 @@ tbody tr:last-child td{border-bottom:none}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .img-preview{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-top:8px;display:none}
 
-/* 扫码容器 */
+/* 摄像头 / 扫码容器 */
 #reader{width:100%;height:300px;background:#000;border-radius:8px;overflow:hidden;margin-bottom:16px}
 #reader video{object-fit:cover}
+#cameraVideo{width:100%;border-radius:8px;background:#000;max-height:60vh;object-fit:cover}
 
 /* 空状态 */
 .empty{text-align:center;padding:40px 20px;color:var(--text-3)}
@@ -268,12 +269,10 @@ tbody tr:last-child td{border-bottom:none}
       </div>
       <div class="field">
         <label>商品图片</label>
-        <!-- 拍照（强制调用后置摄像头） -->
-        <input type="file" id="fImageCamera" accept="image/*" capture="environment" onchange="handleImageUpload(event)" style="display:none">
-        <!-- 相册（弹出系统文件选择器） -->
+        <!-- 相册（保留） -->
         <input type="file" id="fImageGallery" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
         <div style="display:flex; gap:8px; margin-top:6px;">
-          <button type="button" class="btn outline" style="flex:1" onclick="document.getElementById('fImageCamera').click()">📷 拍照</button>
+          <button type="button" class="btn outline" style="flex:1" onclick="openCamera()">📷 拍照</button>
           <button type="button" class="btn outline" style="flex:1" onclick="document.getElementById('fImageGallery').click()">🖼️ 相册</button>
         </div>
         <img id="previewImg" class="img-preview">
@@ -300,6 +299,18 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <div id="reader"></div>
     <p style="text-align:center;font-size:13px;color:var(--text-3)">将条码放入框内即可自动扫描</p>
+  </div>
+</div>
+
+<!-- 拍照模态框 -->
+<div class="modal" id="cameraModal">
+  <div class="modal-content" style="max-width:440px; text-align:center;">
+    <h3 style="margin-top:0;">📷 拍照</h3>
+    <video id="cameraVideo" autoplay playsinline></video>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn outline" style="flex:1" onclick="closeCamera()">取消</button>
+      <button class="btn primary" style="flex:1" onclick="takePhoto()">📸 确认拍照</button>
+    </div>
   </div>
 </div>
 
@@ -340,7 +351,7 @@ tbody tr:last-child td{border-bottom:none}
 /* ========== 状态与存储 ========== */
 const KEY='inventory_app_v2';
 let items=[],records=[],editingId=null,stockItemId=null,stockType='in';
-let html5QrCode=null,currentImageBase64=null;
+let html5QrCode=null,currentImageBase64=null,cameraStream=null;
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({items,records}))}catch(e){toast('保存失败！存储空间可能已满')}}
 function load(){try{const r=localStorage.getItem(KEY);if(!r)return false;const d=JSON.parse(r);items=Array.isArray(d.items)?d.items:[];records=Array.isArray(d.records)?d.records:[];return true}catch(e){return false}}
@@ -603,8 +614,9 @@ function openItemModal(id){
   const form=document.getElementById('itemForm');form.reset();
   document.getElementById('previewImg').style.display='none';
   document.getElementById('removeImgBtn').style.display='none';
-  document.getElementById('fImageCamera').value='';
-  document.getElementById('fImageGallery').value='';
+  const galInput=document.getElementById('fImageGallery');
+  if(galInput) galInput.value='';
+  closeCamera();
   currentImageBase64=null;
   
   if(id){
@@ -632,7 +644,11 @@ function openItemModal(id){
   document.getElementById('itemModal').classList.add('show');
 }
 
-function closeItemModal(){document.getElementById('itemModal').classList.remove('show');editingId=null}
+function closeItemModal(){
+  closeCamera();
+  document.getElementById('itemModal').classList.remove('show');
+  editingId=null;
+}
 
 function saveItem(e){
   e.preventDefault();
@@ -672,6 +688,13 @@ function saveItem(e){
   save();closeItemModal();renderPage();
 }
 
+function deleteItem(id){
+  const p=items.find(x=>x.id===id);if(!p)return;
+  if(!confirm(`确定删除「${p.name}」吗？`))return;
+  items=items.filter(x=>x.id!==id);
+  save();renderPage();toast('已删除');
+}
+
 function openStockModal(id,type){
   stockItemId=id;stockType=type||'in';
   const p=items.find(x=>x.id===id);if(!p)return;
@@ -706,7 +729,52 @@ function confirmStock(){
   toast(stockType==='in'?`已入库 ${qty}`:`已出库 ${qty}`);
 }
 
-/* ========== 图片处理 ========== */
+/* ========== 自定义相机拍照 ========== */
+function openCamera(){
+  document.getElementById('cameraModal').classList.add('show');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('当前环境不支持调用摄像头，请用相册选图');
+    closeCamera();
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+  .then(stream => {
+    cameraStream = stream;
+    document.getElementById('cameraVideo').srcObject = stream;
+  })
+  .catch(err => {
+    console.error('摄像头启动失败:', err);
+    toast(err.name === 'NotAllowedError' ? '相机权限被拒绝，请在手机设置中允许使用相机' : '无法打开相机，请检查权限');
+    closeCamera();
+  });
+}
+
+function closeCamera(){
+  if(cameraStream){
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  const video = document.getElementById('cameraVideo');
+  if(video) video.srcObject = null;
+  document.getElementById('cameraModal').classList.remove('show');
+}
+
+function takePhoto(){
+  const video = document.getElementById('cameraVideo');
+  if(!video || !video.videoWidth){ toast('相机未准备好'); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  currentImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+  document.getElementById('previewImg').src = currentImageBase64;
+  document.getElementById('previewImg').style.display = 'block';
+  document.getElementById('removeImgBtn').style.display = 'inline-block';
+  closeCamera();
+  toast('照片已拍摄');
+}
+
+/* ========== 相册选图 ========== */
 function handleImageUpload(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -731,53 +799,60 @@ function handleImageUpload(e){
 
 function removeImage(){
   currentImageBase64=null;
-  const camInput=document.getElementById('fImageCamera');
   const galInput=document.getElementById('fImageGallery');
-  if(camInput)camInput.value='';
-  if(galInput)galInput.value='';
+  if(galInput) galInput.value='';
+  closeCamera();
   document.getElementById('previewImg').style.display='none';
   document.getElementById('removeImgBtn').style.display='none';
 }
 
-/* ========== 扫码功能（移动端优化版，解决黑屏） ========== */
+/* ========== 扫码功能（专门针对一维条码优化） ========== */
 function startScan(){
-  if(typeof Html5Qrcode==='undefined'){
+  if(typeof Html5Qrcode==='undefined' || typeof Html5QrcodeSupportedFormats === 'undefined'){
     toast('扫码库未加载完成，请刷新重试');
     return;
   }
-  
-  // 1. 先弹出模态框，让页面先渲染
   document.getElementById('scannerModal').classList.add('show');
   
-  // 2. 延迟 400 毫秒，等动画走完再启动摄像头（防止黑屏的核心）
   setTimeout(() => {
     if(html5QrCode){ try{html5QrCode.clear()}catch(e){} }
-    
-    // 检查当前环境是否支持摄像头
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
       toast('当前环境不支持调用摄像头，请确认使用 HTTPS 网址');
       closeScan();
       return;
     }
     
-    html5QrCode = new Html5Qrcode("reader");
+    const formatsToSupport = [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.ITF,
+      Html5QrcodeSupportedFormats.QR_CODE
+    ];
     
-    // 尝试直接启动环境摄像头（兼容性最好）
+    html5QrCode = new Html5Qrcode("reader", {
+      formatsToSupport: formatsToSupport,
+      useBarCodeDetectorIfSupported: true // ⭐ 核心！开启原生扫码支持，扫一维码极快
+    });
+    
+    const config = {
+      fps: 30,
+      qrbox: { width: 280, height: 120 }, // 横向长方形，贴合条码形状
+      aspectRatio: 1.777,
+      disableFlip: true
+    };
+    
     html5QrCode.start(
-      { facingMode: "environment" }, // 强制后置
-      { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
+      { facingMode: "environment" },
+      config,
       onScanSuccess,
-      (errorMessage) => { /* 每帧扫描的错误忽略，避免刷屏 */ }
+      (errorMessage) => { /* 忽略每帧错误 */ }
     ).catch(err => {
       console.error("摄像头启动失败：", err);
-      // 失败时给用户明确的提示，而不是一直黑屏
-      if(err.name === 'NotAllowedError' || err.message.includes('permission')){
-        toast('❌ 相机权限被拒绝！请在手机设置中允许本应用使用相机');
-      }else if(err.name === 'NotFoundError'){
-        toast('❌ 未检测到摄像头设备');
-      }else{
-        toast('❌ 摄像头启动失败，请检查手机权限');
-      }
+      toast(err.name === 'NotAllowedError' ? '❌ 相机权限被拒绝！请在手机设置中允许使用相机' : '❌ 摄像头启动失败，请检查手机权限');
       closeScan();
     });
   }, 400);
@@ -838,7 +913,6 @@ async function exportExcel(){
   const workbook=new ExcelJS.Workbook();
   const worksheet=workbook.addWorksheet('库存商品');
   
-  // 设置列宽和表头
   worksheet.columns=[
     {header:'商品图片',key:'image',width:15},
     {header:'商品名称',key:'name',width:22},
@@ -855,14 +929,12 @@ async function exportExcel(){
     {header:'备注',key:'note',width:20}
   ];
   
-  // 表头样式
   const headerRow=worksheet.getRow(1);
   headerRow.font={bold:true,color:{argb:'FFFFFFFF'}};
   headerRow.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2E7D6B'}};
   headerRow.alignment={vertical:'middle',horizontal:'center'};
   headerRow.height=25;
   
-  // 逐行添加商品和图片
   for(let i=0;i<items.length;i++){
     const p=items[i];
     const low=Number(p.min)>0&&Number(p.qty)<=Number(p.min);
@@ -886,30 +958,18 @@ async function exportExcel(){
       note:p.note||''
     });
     
-    row.height=60; // 图片行高
+    row.height=60;
     row.alignment={vertical:'middle'};
     
-    // 如果有图片，嵌入到第一列（图片列）
     if(p.image&&p.image.startsWith('data:image')){
       try{
         const base64Data=p.image.split(',')[1];
-        const imageId=workbook.addImage({
-          base64:base64Data,
-          extension:'jpeg'
-        });
-        // 把图片放入第 1 列，第 i+2 行（表头占第 1 行）
-        worksheet.addImage(imageId,{
-          tl:{col:0,row:i+1},
-          ext:{width:80,height:80},
-          editAs:'oneCell'
-        });
-      }catch(err){
-        console.warn('图片嵌入失败：',err);
-      }
+        const imageId=workbook.addImage({ base64:base64Data, extension:'jpeg' });
+        worksheet.addImage(imageId,{ tl:{col:0,row:i+1}, ext:{width:80,height:80}, editAs:'oneCell' });
+      }catch(err){ console.warn('图片嵌入失败：',err); }
     }
   }
   
-  // 第二个工作表：出入库流水
   const wsRecords=workbook.addWorksheet('出入库流水');
   wsRecords.columns=[
     {header:'时间',key:'time',width:20},
@@ -926,22 +986,15 @@ async function exportExcel(){
   
   records.forEach(r=>{
     wsRecords.addRow({
-      time:fmtTime(r.time),
-      name:r.name,
-      type:r.type==='in'?'入库':'出库',
-      qty:r.qty,
-      before:r.before,
-      after:r.after,
-      note:r.note||''
+      time:fmtTime(r.time), name:r.name, type:r.type==='in'?'入库':'出库',
+      qty:r.qty, before:r.before, after:r.after, note:r.note||''
     });
   });
   
-  // 导出文件
   const buffer=await workbook.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const d=new Date();
-  const fileName=`青禾库存_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`;
-  saveAs(blob,fileName);
+  saveAs(blob,`青禾库存_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`);
   toast('Excel 导出成功！图片已包含在内。');
 }
 
