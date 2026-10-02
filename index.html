@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a2b2a">
 <title>青禾库存 · 工作台</title>
-<!-- 扫码库 -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<!-- ExcelJS 和 FileSaver (用于导出带图片的 Excel) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <style>
@@ -23,7 +21,6 @@ html,body{margin:0;padding:0;height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow:hidden}
 input,textarea,select,button{font-family:inherit;font-size:14px}
 
-/* 布局 */
 .app-container{display:flex;height:100vh;width:100vw}
 .sidebar{width:240px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;flex-shrink:0;padding:20px 0}
 .logo{display:flex;align-items:center;gap:10px;padding:0 24px 30px;color:#fff}
@@ -36,7 +33,6 @@ input,textarea,select,button{font-family:inherit;font-size:14px}
 .nav-item:hover{background:var(--sidebar-hover);color:#fff}
 .nav-item.active{background:var(--sidebar-active);color:#fff}
 .sidebar-footer{padding:20px 24px;font-size:12px;opacity:.6;line-height:1.6;border-top:1px solid rgba(255,255,255,.08)}
-.sidebar-footer b{color:#fff}
 
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
 .header{display:flex;justify-content:space-between;align-items:center;padding:16px 28px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;gap:10px}
@@ -45,7 +41,6 @@ input,textarea,select,button{font-family:inherit;font-size:14px}
 .header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .page-body{padding:20px 28px;overflow-y:auto;flex:1}
 
-/* 通用组件 */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;border:1px solid transparent;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;background:#fff;color:var(--text);white-space:nowrap}
 .btn:active{transform:scale(.98)}
 .btn.primary{background:var(--primary);color:#fff}
@@ -61,7 +56,6 @@ input,textarea,select,button{font-family:inherit;font-size:14px}
 .card-title{font-size:15px;font-weight:700;margin:0 0 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .card-title .sub{font-size:12px;font-weight:400;color:var(--text-3)}
 
-/* 统计卡片 */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
 .stat-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px}
 .stat-card .lbl{font-size:13px;color:var(--text-2);margin-bottom:6px}
@@ -69,7 +63,6 @@ input,textarea,select,button{font-family:inherit;font-size:14px}
 .stat-card .val.warning{color:var(--warning)}
 .stat-card .val.danger{color:var(--danger)}
 
-/* 表格 */
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{text-align:left;padding:12px 14px;font-size:12px;font-weight:600;color:var(--text-2);background:#f8fafc;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -90,18 +83,15 @@ tbody tr:last-child td{border-bottom:none}
 .action-col{text-align:right;white-space:nowrap}
 .action-col .btn{margin-left:2px}
 
-/* 工具栏 */
 .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .toolbar .search{position:relative;flex:1;min-width:180px}
 .toolbar .search input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);border-radius:8px;outline:none}
 .toolbar .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-3)}
 .toolbar select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;outline:none;background:#fff;color:var(--text)}
 
-/* 补货提示条 */
 .alert-bar{display:flex;justify-content:space-between;align-items:center;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:#92400e}
 .alert-bar strong{color:#d97706}
 
-/* 模态框 */
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s}
 .modal.show{opacity:1;pointer-events:auto}
 .modal-content{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:24px;transform:translateY(20px);transition:.3s}
@@ -116,21 +106,17 @@ tbody tr:last-child td{border-bottom:none}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .img-preview{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);margin-top:8px;display:none}
 
-/* 摄像头 / 扫码容器 */
 #reader{width:100%;height:300px;background:#000;border-radius:8px;overflow:hidden;margin-bottom:16px}
 #reader video{object-fit:cover}
 #cameraVideo{width:100%;border-radius:8px;background:#000;max-height:60vh;object-fit:cover}
 
-/* 空状态 */
 .empty{text-align:center;padding:40px 20px;color:var(--text-3)}
 .empty svg{width:48px;height:48px;opacity:.3;margin-bottom:12px}
 
-/* Toast */
 .toast-wrap{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:2000;pointer-events:none}
 .toast{background:#1e293b;color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:slideIn .2s ease}
 @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
 
-/* 响应式（手机端） */
 @media(max-width:768px){
   .app-container{flex-direction:column}
   .sidebar{width:100%;height:auto;padding:12px 16px;flex-direction:row;align-items:center;justify-content:space-between;overflow-x:auto}
@@ -156,7 +142,6 @@ tbody tr:last-child td{border-bottom:none}
 <body>
 
 <div class="app-container">
-  <!-- 侧边栏 -->
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-icon">青</div>
@@ -189,7 +174,6 @@ tbody tr:last-child td{border-bottom:none}
     </div>
   </aside>
 
-  <!-- 主内容 -->
   <main class="main-content">
     <header class="header">
       <div class="header-left">
@@ -208,9 +192,7 @@ tbody tr:last-child td{border-bottom:none}
       </div>
     </header>
 
-    <div class="page-body" id="pageContent">
-      <!-- 动态渲染 -->
-    </div>
+    <div class="page-body" id="pageContent"></div>
   </main>
 </div>
 
@@ -259,17 +241,16 @@ tbody tr:last-child td{border-bottom:none}
           <input id="fTarget" type="number" min="0" step="1" value="0" inputmode="numeric">
         </div>
         <div class="field">
-          <label>进价（元）</label>
+          <label>进价（RM）</label>
           <input id="fCost" type="number" min="0" step="0.01" value="0" inputmode="decimal">
         </div>
       </div>
       <div class="field">
-        <label>售价（元）</label>
+        <label>售价（RM）</label>
         <input id="fPrice" type="number" min="0" step="0.01" value="0" inputmode="decimal">
       </div>
       <div class="field">
         <label>商品图片</label>
-        <!-- 相册（保留） -->
         <input type="file" id="fImageGallery" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
         <div style="display:flex; gap:8px; margin-top:6px;">
           <button type="button" class="btn outline" style="flex:1" onclick="openCamera()">📷 拍照</button>
@@ -352,13 +333,15 @@ tbody tr:last-child td{border-bottom:none}
 const KEY='inventory_app_v2';
 let items=[],records=[],editingId=null,stockItemId=null,stockType='in';
 let html5QrCode=null,currentImageBase64=null,cameraStream=null;
+let stockCatFilter='';
+let restockCatFilter='';
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({items,records}))}catch(e){toast('保存失败！存储空间可能已满')}}
 function load(){try{const r=localStorage.getItem(KEY);if(!r)return false;const d=JSON.parse(r);items=Array.isArray(d.items)?d.items:[];records=Array.isArray(d.records)?d.records:[];return true}catch(e){return false}}
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function money(n){return '¥'+(Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function money(n){return 'RM '+(Number(n)||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtNum(n){return (Number(n)||0).toLocaleString('zh-CN')}
 function pad2(n){return String(n).padStart(2,'0')}
 function fmtTime(t){const d=new Date(t),now=new Date();const same=d.toDateString()===now.toDateString();
@@ -391,7 +374,6 @@ function go(page){
   renderPage();
 }
 
-/* ========== 渲染逻辑 ========== */
 function renderPage(){
   const el=document.getElementById('pageContent');
   if(currentPage==='home') renderHome(el);
@@ -400,6 +382,7 @@ function renderPage(){
   else if(currentPage==='history') renderHistory(el);
 }
 
+/* ========== 工作概览 ========== */
 function renderHome(el){
   const kinds=items.length;
   const totalQty=items.reduce((s,p)=>s+(Number(p.qty)||0),0);
@@ -438,6 +421,7 @@ function renderHome(el){
   }
 }
 
+/* ========== 库存商品 ========== */
 function renderStock(el){
   const cats=[...new Set(items.map(p=>p.cat).filter(Boolean))];
   el.innerHTML=`
@@ -453,7 +437,7 @@ function renderStock(el){
         </div>
         <select id="catFilter" onchange="filterStock()">
           <option value="">所有类别</option>
-          ${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+          ${cats.map(c=>`<option value="${esc(c)}" ${c===stockCatFilter?'selected':''}>${esc(c)}</option>`).join('')}
         </select>
         <button class="btn outline" onclick="exportExcel()">📥 导出 Excel</button>
         <button class="btn outline" onclick="exportJSON()">💾 备份数据</button>
@@ -464,7 +448,7 @@ function renderStock(el){
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>商品</th><th>类别</th><th>当前库存</th><th>安全库存</th><th>售价</th><th>条码</th><th>建议补货量</th><th style="text-align:right">操作</th>
+            <th>商品</th><th>类别</th><th>目标库存</th><th>当前库存</th><th>建议补货量</th><th>售价</th><th>条码</th><th style="text-align:right">操作</th>
           </tr></thead>
           <tbody id="stockTableBody"></tbody>
         </table>
@@ -476,10 +460,10 @@ function renderStock(el){
 
 function filterStock(){
   const q=(document.getElementById('searchInput')?.value||'').trim().toLowerCase();
-  const cat=document.getElementById('catFilter')?.value||'';
+  stockCatFilter=document.getElementById('catFilter')?.value||'';
   const filtered=items.filter(p=>{
     const matchQ=!q||(p.name||'').toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q)||(p.cat||'').toLowerCase().includes(q);
-    const matchCat=!cat||p.cat===cat;
+    const matchCat=!stockCatFilter||p.cat===stockCatFilter;
     return matchQ&&matchCat;
   });
   const tbody=document.getElementById('stockTableBody');
@@ -498,11 +482,11 @@ function filterStock(){
       <tr>
         <td><div class="product-cell">${img}<div class="product-info"><div class="name">${esc(p.name)}</div><div class="sku">${p.sku?esc(p.sku):'无条码'}</div></div></div></td>
         <td><span class="tag">${esc(p.cat||'未分类')}</span></td>
+        <td><span class="num">${target}</span> ${esc(p.unit||'')}</td>
         <td><span class="num ${low?'text-danger':''}">${p.qty}</span> ${esc(p.unit||'')}</td>
-        <td><span class="num">${p.min||0}</span> ${esc(p.unit||'')}</td>
+        <td>${suggestHtml}</td>
         <td>${money(p.price)}</td>
         <td style="font-family:ui-monospace,monospace;font-size:12px">${p.sku||'—'}</td>
-        <td>${suggestHtml}</td>
         <td class="action-col">
           <button class="btn sm outline icon-btn" onclick="openStockModal('${p.id}','out')" title="出库">−</button>
           <button class="btn sm primary icon-btn" onclick="openStockModal('${p.id}','in')" title="入库">+</button>
@@ -512,27 +496,33 @@ function filterStock(){
   }).join('');
 }
 
+/* ========== 补货清单 ========== */
 function renderRestock(el){
-  const lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
-  const totalSuggest=lowItems.reduce((s,p)=>{
+  const allLowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  const cats=[...new Set(items.map(p=>p.cat).filter(Boolean))];
+  const totalSuggest=allLowItems.reduce((s,p)=>{
     const target=Number(p.target)||Number(p.min)*2||10;
     return s+Math.max(0,target-Number(p.qty));
   },0);
   
   el.innerHTML=`
     <div class="alert-bar">
-      <span>本次需要补货 <strong>${lowItems.length}</strong> 种商品</span>
+      <span>本次需要补货 <strong>${allLowItems.length}</strong> 种商品</span>
       <span>建议补货总件数 <strong>${totalSuggest}</strong></span>
     </div>
     <div class="card">
-      <div class="toolbar" style="justify-content: flex-end; margin-bottom: 16px;">
+      <div class="toolbar">
+        <select id="restockCatFilter" onchange="filterRestock()">
+          <option value="">所有类别</option>
+          ${cats.map(c=>`<option value="${esc(c)}" ${c===restockCatFilter?'selected':''}>${esc(c)}</option>`).join('')}
+        </select>
         <button class="btn outline" onclick="exportRestockExcel()">📥 导出补货清单 Excel</button>
         <button class="btn outline" onclick="exportRestockJSON()">💾 导出补货清单 JSON</button>
       </div>
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>商品</th><th>类别</th><th>当前库存</th><th>安全库存</th><th>建议补货量</th><th>售价</th><th>条码</th><th style="text-align:right">操作</th>
+            <th>类别</th><th>商品</th><th>目标库存</th><th>当前库存</th><th>建议补货量</th><th>条码</th><th style="text-align:right">操作</th>
           </tr></thead>
           <tbody id="restockBody"></tbody>
         </table>
@@ -540,9 +530,21 @@ function renderRestock(el){
     </div>
   `;
   
-  const tbody=el.querySelector('#restockBody');
-  if(lowItems.length===0){tbody.innerHTML='<tr><td colspan="8"><div class="empty">暂无需要补货的商品</div></td></tr>';return}
-  
+  filterRestock();
+}
+
+function filterRestock(){
+  restockCatFilter=document.getElementById('restockCatFilter')?.value||'';
+  let lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  if(restockCatFilter){
+    lowItems=lowItems.filter(p=>p.cat===restockCatFilter);
+  }
+  const tbody=document.getElementById('restockBody');
+  if(!tbody) return;
+  if(lowItems.length===0){
+    tbody.innerHTML='<tr><td colspan="7"><div class="empty">暂无需要补货的商品</div></td></tr>';
+    return;
+  }
   tbody.innerHTML=lowItems.map(p=>{
     const target=Number(p.target)||Number(p.min)*2||10;
     const suggest=Math.max(0,target-Number(p.qty));
@@ -551,10 +553,9 @@ function renderRestock(el){
       <tr>
         <td><span class="tag">${esc(p.cat||'未分类')}</span></td>
         <td><div class="product-cell">${img}<div class="product-info"><div class="name">${esc(p.name)}</div><div class="sku">${p.sku?esc(p.sku):'无条码'}</div></div></div></td>
+        <td><span class="num">${target}</span> ${esc(p.unit||'')}</td>
         <td><span class="num ${Number(p.qty)<=Number(p.min)?'text-danger':''}">${p.qty}</span> ${esc(p.unit||'')}</td>
-        <td><span class="num">${p.min||0}</span></td>
-        <td><span class="num">${target}</span></td>
-        <td><span class="num text-warning">${suggest}</span></td>
+        <td><span class="num text-warning">${suggest}</span> ${esc(p.unit||'')}</td>
         <td style="font-family:ui-monospace,monospace;font-size:12px">${p.sku||'—'}</td>
         <td class="action-col">
           <button class="btn sm primary" onclick="confirmRestock('${p.id}')">确认到货</button>
@@ -563,6 +564,7 @@ function renderRestock(el){
   }).join('');
 }
 
+/* ========== 库存流水 ========== */
 function renderHistory(el){
   el.innerHTML=`
     <div class="card">
@@ -726,7 +728,7 @@ function confirmStock(){
   toast(stockType==='in'?`已入库 ${qty}`:`已出库 ${qty}`);
 }
 
-/* ========== 自定义相机拍照 ========== */
+/* ========== 相机拍照 ========== */
 function openCamera(){
   document.getElementById('cameraModal').classList.add('show');
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -771,7 +773,6 @@ function takePhoto(){
   toast('照片已拍摄');
 }
 
-/* ========== 相册选图 ========== */
 function handleImageUpload(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -803,7 +804,7 @@ function removeImage(){
   document.getElementById('removeImgBtn').style.display='none';
 }
 
-/* ========== 扫码功能（专门针对一维条码优化） ========== */
+/* ========== 扫码 ========== */
 function startScan(){
   if(typeof Html5Qrcode==='undefined' || typeof Html5QrcodeSupportedFormats === 'undefined'){
     toast('扫码库未加载完成，请刷新重试');
@@ -832,12 +833,12 @@ function startScan(){
     
     html5QrCode = new Html5Qrcode("reader", {
       formatsToSupport: formatsToSupport,
-      useBarCodeDetectorIfSupported: true // ⭐ 核心！开启原生扫码支持，扫一维码极快
+      useBarCodeDetectorIfSupported: true
     });
     
     const config = {
       fps: 30,
-      qrbox: { width: 280, height: 120 }, // 横向长方形，贴合条码形状
+      qrbox: { width: 280, height: 120 },
       aspectRatio: 1.777,
       disableFlip: true
     };
@@ -846,7 +847,7 @@ function startScan(){
       { facingMode: "environment" },
       config,
       onScanSuccess,
-      (errorMessage) => { /* 忽略每帧错误 */ }
+      (errorMessage) => {}
     ).catch(err => {
       console.error("摄像头启动失败：", err);
       toast(err.name === 'NotAllowedError' ? '❌ 相机权限被拒绝！请在手机设置中允许使用相机' : '❌ 摄像头启动失败，请检查手机权限');
@@ -916,13 +917,13 @@ async function exportExcel(){
     {header:'条码/编号',key:'sku',width:15},
     {header:'分类',key:'cat',width:12},
     {header:'单位',key:'unit',width:8},
+    {header:'目标库存',key:'target',width:10},
     {header:'当前库存',key:'qty',width:10},
     {header:'安全库存',key:'min',width:10},
-    {header:'目标库存',key:'target',width:10},
-    {header:'进价(元)',key:'cost',width:10},
-    {header:'售价(元)',key:'price',width:10},
-    {header:'库存成本',key:'totalCost',width:12},
-    {header:'状态',key:'status',width:12},
+    {header:'建议补货量',key:'suggest',width:12},
+    {header:'进价(RM)',key:'cost',width:10},
+    {header:'售价(RM)',key:'price',width:10},
+    {header:'库存成本(RM)',key:'totalCost',width:14},
     {header:'备注',key:'note',width:20}
   ];
   
@@ -934,24 +935,21 @@ async function exportExcel(){
   
   for(let i=0;i<items.length;i++){
     const p=items[i];
-    const low=Number(p.min)>0&&Number(p.qty)<=Number(p.min);
-    const out=Number(p.qty)<=0;
-    let statusText='库存充足';
-    if(out)statusText='缺货';
-    else if(low)statusText='库存偏低';
+    const target=Number(p.target)||Number(p.min)*2||10;
+    const suggest=Math.max(0,target-Number(p.qty));
     
     const row=worksheet.addRow({
       name:p.name,
       sku:p.sku||'',
       cat:p.cat||'',
       unit:p.unit||'',
+      target:target,
       qty:Number(p.qty)||0,
       min:Number(p.min)||0,
-      target:Number(p.target)||0,
+      suggest:suggest,
       cost:Number(p.cost)||0,
       price:Number(p.price)||0,
       totalCost:(Number(p.qty)||0)*(Number(p.cost)||0),
-      status:statusText,
       note:p.note||''
     });
     
@@ -992,12 +990,20 @@ async function exportExcel(){
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const d=new Date();
   saveAs(blob,`青禾库存_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`);
-  toast('Excel 导出成功！图片已包含在内。');
+  toast('Excel 导出成功！');
 }
 
-/* ========== 补货清单专属导出 ========== */
+/* ========== 补货清单导出 ========== */
+function getRestockList(){
+  let lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  if(restockCatFilter){
+    lowItems=lowItems.filter(p=>p.cat===restockCatFilter);
+  }
+  return lowItems;
+}
+
 async function exportRestockExcel(){
-  const lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  const lowItems=getRestockList();
   if(lowItems.length===0){toast('暂无需要补货的商品，无法导出');return}
   if(typeof ExcelJS==='undefined'||typeof saveAs==='undefined'){toast('导出组件未加载完成，请刷新页面重试');return}
   
@@ -1011,16 +1017,15 @@ async function exportRestockExcel(){
     {header:'类别',key:'cat',width:12},
     {header:'商品名称',key:'name',width:22},
     {header:'条码/编号',key:'sku',width:15},
+    {header:'目标库存',key:'target',width:12},
     {header:'当前库存',key:'qty',width:10},
-    {header:'安全库存',key:'min',width:10},
-    {header:'目标库存',key:'target',width:10},
-    {header:'建议补货量',key:'suggest',width:15},
+    {header:'建议补货量',key:'suggest',width:14},
     {header:'单位',key:'unit',width:8}
   ];
   
   const headerRow=worksheet.getRow(1);
   headerRow.font={bold:true,color:{argb:'FFFFFFFF'}};
-  headerRow.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD97706'}}; // 橙色表头，区分主库存表
+  headerRow.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD97706'}};
   headerRow.alignment={vertical:'middle',horizontal:'center'};
   headerRow.height=25;
   
@@ -1033,9 +1038,8 @@ async function exportRestockExcel(){
       cat:p.cat||'',
       name:p.name,
       sku:p.sku||'',
-      qty:Number(p.qty)||0,
-      min:Number(p.min)||0,
       target:target,
+      qty:Number(p.qty)||0,
       suggest:suggest,
       unit:p.unit||''
     });
@@ -1055,12 +1059,13 @@ async function exportRestockExcel(){
   const buffer=await workbook.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const d=new Date();
-  saveAs(blob,`青禾库存_补货清单_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`);
+  const suffix=restockCatFilter?`_${restockCatFilter}`:'';
+  saveAs(blob,`青禾库存_补货清单${suffix}_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.xlsx`);
   toast('补货清单 Excel 导出成功！');
 }
 
 function exportRestockJSON(){
-  const lowItems=items.filter(p=>Number(p.min)>0&&Number(p.qty)<=Number(p.min));
+  const lowItems=getRestockList();
   if(lowItems.length===0){toast('暂无需要补货的商品，无法导出');return}
   
   const restockData=lowItems.map(p=>{
@@ -1070,9 +1075,8 @@ function exportRestockJSON(){
       '条码/编号':p.sku||'',
       '分类':p.cat||'',
       '单位':p.unit||'',
-      '当前库存':Number(p.qty)||0,
-      '安全库存':Number(p.min)||0,
       '目标库存':target,
+      '当前库存':Number(p.qty)||0,
       '建议补货量':Math.max(0,target-Number(p.qty))
     };
   });
@@ -1081,6 +1085,7 @@ function exportRestockJSON(){
     version:2,
     exportedAt:new Date().toISOString(),
     type:'restock_list',
+    categoryFilter:restockCatFilter||'全部',
     items:restockData
   },null,2);
   
@@ -1088,7 +1093,8 @@ function exportRestockJSON(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
   const d=new Date();
-  a.download=`青禾库存_补货清单_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.json`;
+  const suffix=restockCatFilter?`_${restockCatFilter}`:'';
+  a.download=`青禾库存_补货清单${suffix}_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}.json`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('补货清单 JSON 导出成功！');
